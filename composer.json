@@ -1,6 +1,6 @@
 {
   "name": "diego/prueba2025-senior",
-  "description": "Sistema de reservas de inventario con confirmación asíncrona",
+  "description": "Inventory reservation system with asynchronous confirmation",
   "type": "project",
   "license": "MIT",
   "require": {
