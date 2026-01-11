@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 namespace App\Domain\Entity;
 
-use App\Domain\Enum\ReservationStatus;
+
 use DateTimeImmutable;
+use Domain\Enum\ReservationStatus as EnumReservationStatus;
 
 final class Reservation
 {
@@ -14,11 +15,30 @@ final class Reservation
         private int $itemId,
         private string $idempotencyKey,
         private int $quantity,
-        private ReservationStatus $status,
+        private EnumReservationStatus $status,
         private DateTimeImmutable $expiresAt,
         private DateTimeImmutable $createdAt,
         private DateTimeImmutable $updatedAt
     ) {}
+
+    public static function createPending(
+        int $itemId,
+        string $idempotencyKey,
+        int $quantity,
+        DateTimeImmutable $expiresAt
+    ): self {
+        $now = new DateTimeImmutable();
+        return new self(
+            id: 0,
+            itemId: $itemId,
+            idempotencyKey: $idempotencyKey,
+            quantity: $quantity,
+            status: EnumReservationStatus::PENDING,
+            expiresAt: $expiresAt,
+            createdAt: $now,
+            updatedAt: $now
+        );
+    }
 
     public function id(): int
     {
@@ -40,7 +60,7 @@ final class Reservation
         return $this->quantity;
     }
 
-    public function status(): ReservationStatus
+    public function status(): EnumReservationStatus
     {
         return $this->status;
     }
@@ -52,31 +72,31 @@ final class Reservation
 
     public function markConfirmed(): void
     {
-        if ($this->status !== ReservationStatus::PENDING) {
+        if ($this->status !== EnumReservationStatus::PENDING) {
             throw new \DomainException('Only pending reservations can be confirmed');
         }
 
-        $this->status = ReservationStatus::CONFIRMED;
+        $this->status = EnumReservationStatus::CONFIRMED;
         $this->touch();
     }
 
     public function markCancelled(): void
     {
-        if ($this->status !== ReservationStatus::PENDING) {
+        if ($this->status !== EnumReservationStatus::PENDING) {
             return;
         }
 
-        $this->status = ReservationStatus::CANCELLED;
+        $this->status = EnumReservationStatus::CANCELLED;
         $this->touch();
     }
 
     public function markExpired(): void
     {
-        if ($this->status !== ReservationStatus::PENDING) {
+        if ($this->status !== EnumReservationStatus::PENDING) {
             return;
         }
 
-        $this->status = ReservationStatus::EXPIRED;
+        $this->status = EnumReservationStatus::EXPIRED;
         $this->touch();
     }
 
@@ -87,7 +107,7 @@ final class Reservation
 
     public function isExpired(DateTimeImmutable $now): bool
     {
-        return $this->status === ReservationStatus::PENDING
+        return $this->status === EnumReservationStatus::PENDING
             && $this->expiresAt <= $now;
     }
 
