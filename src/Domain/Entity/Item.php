@@ -13,6 +13,11 @@ final class Item
         private int $availableQuantity
     ) {}
 
+    public function name(): string
+    {
+        return $this->name;
+    }
+
     public function id(): int
     {
         return $this->id;
