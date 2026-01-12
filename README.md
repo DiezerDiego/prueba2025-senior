@@ -21,9 +21,23 @@ docker compose exec app vendor/bin/phinx seed:run -c db/phinx.php
 
 3. **Run PHPUnit tests:**
 
+- 3.1 Build the application image locally: 
 ```bash
-docker compose exec app vendor/bin/phpunit tests
+docker build -t reservations_land_gorilla-app .
 ```
+- 3.2 Create the Docker network used by Testcontainers:
+```bash
+docker network create test_network
+```
+- 3.3 Install Composer dependencies locally:
+```bash
+composer install
+```
+Once the prerequisites are completed, run:
+```bash
+./vendor/bin/phpunit tests
+```
+![result.png](tests/result.png)
 
 Now the backend is available at `http://localhost:8080` and the MySQL database is on port `3306`.
 
