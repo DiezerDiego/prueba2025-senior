@@ -12,8 +12,9 @@ final class CreateIdempotencyRequestsTable extends AbstractMigration
 
         $table
             ->addColumn('idempotency_key', 'string', ['limit' => 64])
-            ->addColumn('request_hash', 'string', ['limit' => 64])
+            ->addColumn('payload_hash', 'string', ['limit' => 64])
             ->addColumn('created_at', 'datetime')
+            ->addColumn('reservation_id', 'integer')
             ->addIndex(['idempotency_key'], ['unique' => true])
             ->create();
     }
