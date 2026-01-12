@@ -38,7 +38,7 @@ final class ReservationController
 
             $this->logger->info('Reservation created', [
                 'reservation_id' => $reservation->id(),
-                'sku' => $reservation->sku(),
+                'item_id' => $reservation->itemId(),
                 'quantity' => $reservation->quantity()
             ]);
             return new Response(
@@ -58,6 +58,7 @@ final class ReservationController
                 json_encode(['error' => $e->getMessage()])
             );
         } catch (\Throwable $e) {
+
             $this->logger->error('Reservation creation unexpected error', ['error' => $e->getMessage()]);
             return new Response(
                 500,
@@ -100,14 +101,14 @@ final class ReservationController
         try {
             $id = $this->validator->validateId($vars);
 
-            $this->confirmReservation->execute($id);
+            $status=$this->confirmReservation->execute($id);
 
             $this->logger->info('Reservation marked for confirmation', ['reservation_id' => $id]);
 
             return new Response(
                 202,
                 ['Content-Type' => 'application/json'],
-                json_encode(['reservation_id' => $id, 'status' => ReservationE])
+                json_encode(['reservation_id' => $id, 'status' => $status])
             );
         } catch (DomainException $e) {
             $this->logger->warning('Reservation confirmation failed', ['reservation_id' => $id, 'error' => $e->getMessage()]);
