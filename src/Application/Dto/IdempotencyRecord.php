@@ -8,7 +8,7 @@ final class IdempotencyRecord
     public function __construct(
         public readonly string $key,
         public readonly string $payloadHash,
-        public readonly int    $resourceId
+        public readonly int $reservationId
     )
     {
     }
