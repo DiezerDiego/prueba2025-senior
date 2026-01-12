@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Infrastructure\Persistence\Mysql;
 
 use App\Domain\Repository\IdempotencyRepository;
-use App\Domain\Repository\IdempotencyRecord;
+use App\Application\Dto\IdempotencyRecord;
 use PDO;
 
 final class MysqlIdempotencyRepository implements IdempotencyRepository
@@ -39,8 +39,8 @@ final class MysqlIdempotencyRepository implements IdempotencyRepository
     ): void {
         $stmt = $this->pdo->prepare(
             'INSERT INTO idempotency_requests
-             (idempotency_key, payload_hash, reservation_id)
-             VALUES (:key, :hash, :res)'
+             (idempotency_key, payload_hash, reservation_id,created_at)
+             VALUES (:key, :hash, :res,NOW())'
         );
 
         $stmt->execute([

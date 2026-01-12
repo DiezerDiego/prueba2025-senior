@@ -11,9 +11,7 @@ final class CreateOutboxTable extends AbstractMigration
         $table = $this->table('outbox');
 
         $table
-            ->addColumn('aggregate_type', 'string', ['limit' => 50])
-            ->addColumn('aggregate_id', 'integer')
-            ->addColumn('event_type', 'string', ['limit' => 50])
+            ->addColumn('type', 'string', ['limit' => 50])
             ->addColumn('payload', 'text')
             ->addColumn('processed_at', 'datetime', ['null' => true])
             ->addColumn('created_at', 'datetime', ['default' => 'CURRENT_TIMESTAMP'])

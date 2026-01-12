@@ -18,6 +18,8 @@ use App\Infrastructure\Http\Validation\ItemValidator;
 use App\Infrastructure\Http\Validation\ReservationValidator;
 use App\Infrastructure\Http\Controller\ReservationController;
 use App\Infrastructure\Http\Controller\ItemController;
+use App\Infrastructure\Worker\ExpireReservationsWorker;
+use App\Infrastructure\Worker\ConfirmReservationWorker;
 
 require __DIR__ . '/../vendor/autoload.php';
 
@@ -67,7 +69,6 @@ $createReservation = new CreateReservation(
 $confirmReservation = new ConfirmReservation(
     $reservationRepository,
     $itemRepository,
-    $paymentClient,
     $outboxRepository,
     $transactionManager,
     $logger
@@ -96,8 +97,24 @@ $itemController = new ItemController(
     $logger,
     $itemValidator
 );
-
+//workers
+$confirmReservationWorker=new ConfirmReservationWorker(
+    $outboxRepository,
+    $reservationRepository,
+    $transactionManager,
+    $paymentClient,
+    $notificationClient,
+    $logger
+);
+$expireReservationsWorker=new ExpireReservationsWorker(
+    $reservationRepository,
+    $itemRepository,
+    $transactionManager,
+    $logger
+);
 return [
+    ConfirmReservationWorker::class=> $confirmReservationWorker,
+    ExpireReservationsWorker::class=> $expireReservationsWorker,
     CreateReservation::class   => $createReservation,
     ConfirmReservation::class  => $confirmReservation,
     ExpireReservations::class  => $expireReservations,
