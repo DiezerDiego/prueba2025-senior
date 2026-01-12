@@ -15,35 +15,42 @@ final class ReservationUseCaseTest extends TestCase
 
     public static function setUpBeforeClass(): void
     {
+
         self::$mysql = (new MySQLContainer())
             ->withMySQLDatabase('app_test')
             ->withMySQLUser('app','secret')
             ->withName('mysql_test_' . uniqid())
             ->start();
 
-        $host = self::$mysql->getHost();
-        $port = self::$mysql->getMappedPort(3306);
-
+        $mysqlHost = self::$mysql->getHost();
+        $mysqlPort = self::$mysql->getMappedPort(3306);
+        putenv("DB_HOST=$mysqlHost");
+        putenv("DB_PORT=$mysqlPort");
+        putenv("DB_NAME=app_test");
+        putenv("DB_USER=app");
+        putenv("DB_PASSWORD=secret");
         self::$appContainer = (new GenericContainer('reservations_land_gorilla-app'))
             ->withExposedPorts(80)
             ->withEnvironment([
-                'DB_HOST' => $host,
-                'DB_PORT' => $port,
-                'DB_DATABASE' => 'app_test',
-                'DB_USERNAME' => 'app',
+                'DB_HOST' => $mysqlHost,
+                'DB_PORT' => $mysqlPort,
+                'DB_NAME' => 'app_test',
+                'DB_USER' => 'app',
                 'DB_PASSWORD' => 'secret',
                 'PAYMENT_BASE_URI' => 'https://55b73bf4-c233-4ab2-b2fa-b8a67d60e2c8.mock.pstmn.io',
                 'NOTIFICATION_BASE_URI' => 'https://55b73bf4-c233-4ab2-b2fa-b8a67d60e2c8.mock.pstmn.io'
             ])
             ->withName('app_test_' . uniqid())
             ->start();
-
         $mappedPort = self::$appContainer->getMappedPort(80);
         $host = self::$appContainer->getHost();
         self::$baseUri = "http://$host:$mappedPort";
-
-        exec("vendor/bin/phinx migrate -c db/phinx.php");
-        exec("vendor/bin/phinx seed:run -c db/phinx.php");
+        $envString = sprintf(
+            'DB_HOST=%s DB_PORT=%s DB_NAME=%s DB_USER=%s DB_PASSWORD=%s',
+            $mysqlHost, $mysqlPort, 'app_test', 'app', 'secret'
+        );
+        exec("$envString vendor/bin/phinx migrate -c db/phinx.php", $output1, $return1);
+        exec("$envString vendor/bin/phinx seed:run -c db/phinx.php", $output2, $return2);
     }
 
     public static function tearDownAfterClass(): void
@@ -66,6 +73,7 @@ final class ReservationUseCaseTest extends TestCase
             "headers" => ['Idempotency-Key' => uniqid('key_', true)]
         ]);
         $reservationPending =json_decode($client->get('/reservations/1')->getBody()->getContents(), true);
+        echo $client->get('/reservations/1')->getBody()->getContents();
         $statusPending = $reservationPending["status"];
         $this->assertSame('pending', $statusPending);
         $this->assertSame(201, $response->getStatusCode());
