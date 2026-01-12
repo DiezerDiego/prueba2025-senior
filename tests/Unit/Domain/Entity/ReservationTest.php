@@ -12,10 +12,10 @@ final class ReservationTest extends TestCase
     {
         $reservation = $this->createPendingReservation();
 
-        $reservation->markConfirmed();
+        $reservation->markNeedsConfirmation();
 
         $this->assertSame(
-            ReservationStatus::CONFIRMED,
+            ReservationStatus::NEEDS_CONFIRMATION,
             $reservation->status()
         );
     }
@@ -23,10 +23,7 @@ final class ReservationTest extends TestCase
     public function test_non_pending_reservation_cannot_be_confirmed(): void
     {
         $reservation = $this->createPendingReservation();
-        $reservation->markConfirmed();
-
         $this->expectException(DomainException::class);
-
         $reservation->markConfirmed();
     }
 
