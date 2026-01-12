@@ -6,7 +6,7 @@ namespace App\Domain\Entity;
 
 
 use DateTimeImmutable;
-use Domain\Enum\ReservationStatus as EnumReservationStatus;
+use App\Domain\Enum\ReservationStatus as EnumReservationStatus;
 
 final class Reservation
 {
@@ -27,6 +27,7 @@ final class Reservation
         int $quantity,
         DateTimeImmutable $expiresAt
     ): self {
+
         $now = new DateTimeImmutable();
         return new self(
             id: 0,
@@ -43,6 +44,9 @@ final class Reservation
     public function id(): int
     {
         return $this->id;
+    }
+    public function setId(int $id): void {
+        $this->id = $id;
     }
 
     public function itemId(): int
@@ -65,15 +69,33 @@ final class Reservation
         return $this->status;
     }
 
+    public function createdAt(): DateTimeImmutable
+    {
+        return $this->createdAt;
+    }
+
+    public function updatedAt(): DateTimeImmutable
+    {
+        return $this->updatedAt;
+    }
+
     public function expiresAt(): DateTimeImmutable
     {
         return $this->expiresAt;
     }
-
-    public function markConfirmed(): void
+    public function markNeedsConfirmation()
     {
         if ($this->status !== EnumReservationStatus::PENDING) {
             throw new \DomainException('Only pending reservations can be confirmed');
+        }
+
+        $this->status = EnumReservationStatus::NEEDS_CONFIRMATION;
+        $this->touch();
+    }
+    public function markConfirmed(): void
+    {
+        if ($this->status !== EnumReservationStatus::NEEDS_CONFIRMATION) {
+            throw new \DomainException('Only needs_confirmation reservations can be confirmed');
         }
 
         $this->status = EnumReservationStatus::CONFIRMED;

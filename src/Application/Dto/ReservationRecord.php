@@ -4,7 +4,7 @@ declare(strict_types=1);
 namespace App\Application\Dto;
 
 use DateTimeImmutable;
-use Domain\Enum\ReservationStatus as EnumReservationStatus;
+use App\Domain\Enum\ReservationStatus as EnumReservationStatus;
 
 final class ReservationRecord
 {
