@@ -7,7 +7,7 @@ namespace App\Infrastructure\Persistence\Mysql;
 use App\Domain\Entity\Reservation;
 use App\Domain\Repository\ReservationRepository;
 use DateTimeImmutable;
-use Domain\Enum\ReservationStatus as EnumReservationStatus;
+use App\Domain\Enum\ReservationStatus as EnumReservationStatus;
 use PDO;
 use RuntimeException;
 
@@ -31,7 +31,7 @@ final class MysqlReservationRepository implements ReservationRepository
                 'status' => $reservation->status()->value,
                 'expires'=> $reservation->expiresAt()->format('Y-m-d H:i:s'),
             ]);
-
+            $reservation->setId((int) $this->pdo->lastInsertId());
             return;
         }
 
@@ -50,7 +50,7 @@ final class MysqlReservationRepository implements ReservationRepository
     public function getById(int $id): Reservation
     {
         $stmt = $this->pdo->prepare(
-            'SELECT * FROM reservations WHERE id = :id'
+            'SELECT * FROM reservations WHERE id = :id FOR UPDATE'
         );
         $stmt->execute(['id' => $id]);
 
@@ -65,7 +65,7 @@ final class MysqlReservationRepository implements ReservationRepository
 
     public function findExpiredPendingForUpdate(
         DateTimeImmutable $now,
-        int $limit
+        int $limit=50
     ): array {
         $stmt = $this->pdo->prepare(
             'SELECT * FROM reservations

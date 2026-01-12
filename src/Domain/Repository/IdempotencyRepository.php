@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 namespace App\Domain\Repository;
+use App\Application\Dto\IdempotencyRecord;
 
 interface IdempotencyRepository
 {
