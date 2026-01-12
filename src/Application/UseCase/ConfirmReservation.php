@@ -7,36 +7,39 @@ namespace App\Application\UseCase;
 use Psr\Log\LoggerInterface;
 use App\Domain\Repository\ReservationRepository;
 use App\Domain\Repository\ItemRepository;
-use App\Infrastructure\Client\PaymentClient;
 use App\Infrastructure\Persistence\TransactionManager;
 use DateTimeImmutable;
 use DomainException;
 use App\Domain\Repository\OutboxRepository;
 use App\Application\Dto\OutboxEventRecord;
+use App\Domain\Enum\ReservationStatus as EnumReservationStatus;
 
 final class ConfirmReservation
 {
     public function __construct(
         private ReservationRepository $reservationRepository,
         private ItemRepository $itemRepository,
-        private PaymentClient $paymentClient,
         private OutboxRepository $outboxRepository,
         private TransactionManager $transactionManager,
         private LoggerInterface $logger
     ) {}
 
-    public function execute(int $reservationId): void
+    public function execute(int $reservationId): string
     {
         $now = new DateTimeImmutable();
 
-        $this->transactionManager->transactional(function () use ($reservationId, $now) {
+        $result=$this->transactionManager->transactional(function () use ($reservationId, $now) {
             $reservation = $this->reservationRepository
-                ->getByIdForUpdate($reservationId);
+                ->getById($reservationId);
             $this->logger->info('Processing reservation', ['reservation_id' => $reservationId, 'status' => $reservation->status()->value]);
 
-            if ($reservation->status()->isConfirmed()) {
+            if ($reservation->status()==EnumReservationStatus::NEEDS_CONFIRMATION) {
+                $this->logger->info('Reservation already needs_confirmation', ['reservation_id' => $reservationId]);
+                return $reservation->status()->value;
+            }
+            if ($reservation->status()==EnumReservationStatus::CONFIRMED) {
                 $this->logger->info('Reservation already confirmed', ['reservation_id' => $reservationId]);
-                return;
+                return $reservation->status()->value;
             }
 
             if ($reservation->isExpired($now)) {
@@ -51,15 +54,7 @@ final class ConfirmReservation
                 $this->reservationRepository->save($reservation);
                 $this->logger->warning('Reservation expired', ['reservation_id' => $reservationId]);
 
-                return;
-            }
-            $paymentApproved = $this->paymentClient
-                ->charge($reservation->id(), $reservation->quantity());
-
-            if (!$paymentApproved) {
-                $this->logger->error('Payment rejected', ['reservation_id' => $reservationId]);
-
-                throw new DomainException('Payment rejected');
+                return $reservation->status()->value;
             }
 
             $reservation->markNeedsConfirmation();
@@ -78,6 +73,8 @@ final class ConfirmReservation
             );
 
             $this->outboxRepository->save($outboxEvent);
+            return $reservation->status()->value;
         });
+        return $result;
     }
 }

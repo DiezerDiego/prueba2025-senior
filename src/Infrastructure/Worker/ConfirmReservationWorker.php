@@ -7,10 +7,11 @@ namespace App\Infrastructure\Worker;
 use App\Infrastructure\Client\PaymentClient;
 use App\Infrastructure\Client\NotificationClient;
 use App\Infrastructure\Persistence\TransactionManager;
-use App\Infrastructure\Persistence\MysqlReservationRepository;
-use App\Infrastructure\Persistence\MysqlOutboxRepository;
+use App\Infrastructure\Persistence\Mysql\MysqlReservationRepository;
+use App\Infrastructure\Persistence\Mysql\MysqlOutboxRepository;
 use Exception;
 use Psr\Log\LoggerInterface;
+use App\Domain\Enum\ReservationStatus as EnumReservationStatus;
 
 final class ConfirmReservationWorker
 {
@@ -25,14 +26,13 @@ final class ConfirmReservationWorker
 
     public function run(): void
     {
-        $events = $this->outboxRepository->getPendingEvents('reservation_confirmation');
+        $events = $this->outboxRepository->fetchPending(50);
 
         foreach ($events as $event) {
             try {
                 $this->transactionManager->transactional(function() use ($event) {
-                    $reservation = $this->reservationRepository->getByIdForUpdate($event->reservationId);
-
-                    if ($reservation->status() !== 'NEEDS_CONFIRMATION') {
+                    $reservation = $this->reservationRepository->getById($event->payload["reservation_id"]);
+                    if ($reservation->status() !== EnumReservationStatus::NEEDS_CONFIRMATION) {
                         $this->logger->info("Skipping reservation not in NEEDS_CONFIRMATION", [
                             'reservation_id' => $reservation->id(),
                             'status' => $reservation->status()
