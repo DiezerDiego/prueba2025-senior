@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace App\Infrastructure\Dto;
+namespace App\Application\Dto;
 
 final class NotificationResultRecord
 {

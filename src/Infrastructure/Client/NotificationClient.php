@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 namespace App\Infrastructure\Client;
-use App\Infrastructure\Dto\NotificationResultRecord;
+use App\Application\Dto\NotificationResultRecord;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\RequestException;
 use Psr\Log\LoggerInterface;
@@ -35,7 +35,7 @@ final class NotificationClient
             try {
                 $attempt++;
 
-                $response = $this->client->post('/notify', [
+                $response = $this->client->post('/v3/notification', [
                     'json' => [
                         'reservation_id' => $reservationId,
                         'status'         => $status,
@@ -44,7 +44,7 @@ final class NotificationClient
 
                 $data = json_decode((string)$response->getBody(), true);
 
-                if (($data[0]['sent'] ?? false) === true) {
+                if (($data['sent'] ?? false) === true) {
                     $this->logger->info('Notification sent', [
                         'reservation_id' => $reservationId,
                         'status' => $status,
@@ -56,10 +56,13 @@ final class NotificationClient
 
                 throw new \RuntimeException('Notification not acknowledged');
 
-            } catch (\Throwable $e) {
+            } catch (RequestException $e) {
+                $httpStatus = $e->hasResponse()
+                    ? $e->getResponse()->getStatusCode()
+                    : 'no_response';
                 $this->logger->warning('Notification attempt failed', [
                     'reservation_id' => $reservationId,
-                    'status' => $status,
+                    'status' => $httpStatus,
                     'attempt' => $attempt,
                     'error' => $e->getMessage()
                 ]);

@@ -6,7 +6,7 @@ namespace App\Infrastructure\Client;
 
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\RequestException;
-use App\Infrastructure\Dto\PaymentResult;
+use App\Application\Dto\PaymentResultRecord;
 use Psr\Log\LoggerInterface;
 
 final class PaymentClient
@@ -26,27 +26,30 @@ final class PaymentClient
         $this->retries = $config['retries'] ?? 3;
     }
 
-    public function confirmReservation(int $reservationId): PaymentResult
+    public function confirmReservation(int $reservationId): PaymentResultRecord
     {
         $attempt = 0;
 
         do {
             try {
-                $response = $this->client->post("/confirm", [
+                $response = $this->client->post("/v3/payment", [
                         'json' => ['reservation_id' => $reservationId]
                 ]);
 
                 $data = json_decode($response->getBody()->getContents(), true);
 
-                return new PaymentResult(
-                        $data[0]['approved'] ?? false,
-                        $data[0]['provider_ref'] ?? null
+                return new PaymentResultRecord(
+                        $data['approved'],
+                        $data['provider_ref']
                 );
 
             } catch (RequestException $e) {
+                $httpStatus = $e->hasResponse()
+                    ? $e->getResponse()->getStatusCode()
+                    : 'no_response';
                 $this->logger->warning('Payment attempt failed', [
                     'reservation_id' => $reservationId,
-                    'status' => $status,
+                    'status' => $httpStatus,
                     'attempt' => $attempt,
                     'error' => $e->getMessage()
                 ]);
