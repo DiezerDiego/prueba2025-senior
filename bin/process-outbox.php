@@ -10,9 +10,9 @@ use Psr\Log\LoggerInterface;
 $container = require __DIR__ . '/../config/container.php';
 
 /** @var ConfirmReservationWorker $worker */
-$worker = $container->get(ConfirmReservationWorker::class);
+$worker = $container[ConfirmReservationWorker::class];
 /** @var LoggerInterface $logger */
-$logger = $container->get(LoggerInterface::class);
+$logger = $container["logger"];
 
 try {
     $worker->run();

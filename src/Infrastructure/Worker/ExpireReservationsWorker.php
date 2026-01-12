@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Infrastructure\Worker;
 
 use App\Infrastructure\Persistence\TransactionManager;
-use App\Infrastructure\Persistence\MysqlReservationRepository;
-use App\Infrastructure\Persistence\MysqlItemRepository;
+use App\Infrastructure\Persistence\Mysql\MysqlReservationRepository;
+use App\Infrastructure\Persistence\Mysql\MysqlItemRepository;
 use DateTimeImmutable;
 use Psr\Log\LoggerInterface;
 
@@ -23,7 +23,7 @@ final class ExpireReservationsWorker
     {
         $now = new DateTimeImmutable();
 
-        $pendingReservations = $this->reservationRepository->getPendingExpired($now);
+        $pendingReservations = $this->reservationRepository->findExpiredPendingForUpdate($now);
 
         foreach ($pendingReservations as $reservation) {
             try {
