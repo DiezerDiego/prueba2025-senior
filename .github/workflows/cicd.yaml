@@ -1,0 +1,67 @@
+name: PHP CI/CD
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  ci:
+    name: CI - Build PHP
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: pdo, pdo_mysql
+          tools: composer
+
+      - name: Install dependencies
+        run: |
+          composer install \
+            --no-dev \
+            --optimize-autoloader \
+            --no-interaction
+
+      - name: Prepare artifact
+        run: |
+          mkdir deploy
+          rsync -av --exclude='.git' \
+                    --exclude='.github' \
+                    --exclude='tests' \
+                    --exclude='docker' \
+                    --exclude='docker-compose.yml' \
+                    ./ deploy/
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: php-app
+          path: deploy
+
+  cd:
+    name: CD - Deploy via FTP
+    runs-on: ubuntu-latest
+    needs: ci
+
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: php-app
+          path: deploy
+
+      - name: Deploy to FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_HOST }}
+          username: ${{ secrets.FTP_USER }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          port: ${{ secrets.FTP_PORT }}
+          local-dir: deploy/
+          server-dir: /htdocs/
+          dangerous-clean-slate: false
